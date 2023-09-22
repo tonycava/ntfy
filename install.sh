@@ -18,8 +18,12 @@ is_valid_url() {
 usage() {
   echo "Usage: $0 [OPTIONS]"
   echo "Options:"
-  echo "  -i, --url   URL      Specify the URL where the ntfy server run (default: $defaultURL)"
-  echo "  -h, --help           Display this help message"
+  echo "  -i, --url      URL      Specify the URL where the ntfy server run (default: $defaultURL)"
+  echo "  -U, --username USERNAME Specify the username of the ntfy admin (default: $username)"
+  echo "  -P, --password PASSWORD Specify the password of the ntfy admin (default: $password)"
+  echo "  -p, --port     PORT     Specify the port where the ntfy server run (default: $port)"
+  echo "  -s --sudo      SUDO     Specify if the script need to run the docker command in sudo (default: false)"
+  echo "  -h, --help     HELP     Display this help message"
   exit 1
 }
 
