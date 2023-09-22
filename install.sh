@@ -18,12 +18,12 @@ is_valid_url() {
 usage() {
   echo "Usage: $0 [OPTIONS]"
   echo "Options:"
-  echo "  -i, --url      URL      Specify the URL where the ntfy server run (default: $defaultURL)"
-  echo "  -U, --username USERNAME Specify the username of the ntfy admin (default: $username)"
-  echo "  -P, --password PASSWORD Specify the password of the ntfy admin (default: $password)"
-  echo "  -p, --port     PORT     Specify the port where the ntfy server run (default: $port)"
-  echo "  -s --sudo      SUDO     Specify if the script need to run the docker command in sudo (default: false)"
-  echo "  -h, --help     HELP     Display this help message"
+  echo "  -u, --url      URL        Specify the URL where the ntfy server run (default: $defaultURL)"
+  echo "  -U, --username USERNAME   Specify the username of the ntfy admin (default: $username)"
+  echo "  -P, --password PASSWORD   Specify the password of the ntfy admin (default: $password)"
+  echo "  -p, --port     PORT       Specify the port where the ntfy server run (default: $port)"
+  echo "  -s --sudo      SUDO       Specify if the script need to run the docker command in sudo (default: false)"
+  echo "  -h, --help     HELP       Display this help message"
   exit 1
 }
 
@@ -94,8 +94,8 @@ sudo mkdir /etc/ntfy && sudo cp server.yml /etc/ntfy/server.yml
 run_sudo_command_or_not "docker compose up -d"
 
 container_id=$(run_sudo_command_or_not "docker ps -f name=ntfy" | grep -w ntfy | awk '{ print $1 }')
-
-run_sudo_command_or_not "docker exec $container_id ntfy user add --role=admin $username"
+:wq
+./create_ntfy_user.sh $username $password $container_id
 
 uri="${defaultURL:8}"
 
@@ -132,4 +132,5 @@ sudo certbot --nginx -d $uri
 echo "Finish !"
 echo "Don't forget to add the subdomain in your reverse DNS list."
 echo "Here is your access token :"
-echo "$(run_sudo_command_or_not "docker exec $container_idntfy ntfy token list $username"
+tokens=$(run_sudo_command_or_not "docker exec -t $container_id ntfy token list $username" | tail -n +2)
+echo $tokens
