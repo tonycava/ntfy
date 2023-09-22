@@ -94,7 +94,7 @@ sudo mkdir /etc/ntfy && sudo cp server.yml /etc/ntfy/server.yml
 run_sudo_command_or_not "docker compose up -d"
 
 container_id=$(run_sudo_command_or_not "docker ps -f name=ntfy" | grep -w ntfy | awk '{ print $1 }')
-:wq
+
 ./create_ntfy_user.sh $username $password $container_id
 
 uri="${defaultURL:8}"
