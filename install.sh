@@ -4,13 +4,14 @@ defaultURL="https://ntfy.sh"
 port="8092"
 username="admin"
 password="password"
+runOnSudo="1"
 
 is_valid_url() {
   local url="$1"
   local url_pattern="https?:\/\/(www\.)?[-a-zA-Z0-9@:%._\+~#=]{1,256}\.[a-zA-Z0-9()]{1,6}\b([-a-zA-Z0-9()@:%_\+.~#?&//=]*)"
   if [[ ! "$url" =~ $url_pattern ]]; then
     echo "Invalid URL: $url"
-    exit 1  # Exit with an error code
+    exit 1
   fi
 }
 
@@ -33,6 +34,15 @@ argument_check() {
   fi
 }
 
+run_sudo_command_or_not() {
+  local command=$1
+  if [ $runOnSudo = "0" ]; then
+    eval "sudo $command"
+  else
+    eval $command
+  fi
+}
+
 while [[ $# -gt 0 ]]; do
   case "$1" in
     -u|--url)
@@ -40,6 +50,20 @@ while [[ $# -gt 0 ]]; do
       is_valid_url $2
       defaultURL=$2      
       shift 2
+      ;;
+    -U|--username)
+      argument_check "Error: The -U|--username options requires an argument." $#
+      username=$2
+      shift 2
+      ;;
+    -P|--password)
+      argument_check "Error: The -P|--password options requires an argument." $#
+      password=$2
+      shift 2
+      ;;
+    -s|--sudo)
+      runOnSudo="0"
+      shift
       ;;
     -p|--port)
       argument_check "Error: The -p|--port option requires an argument."
@@ -59,26 +83,24 @@ done
 sed -i "s#base-url: \"\"#base-url: \"${defaultURL}\"#" server.yml
 sed -i "s#- 8092:80#- ${port}:80#" docker-compose.yml
 
-#sudo mkdir /var/cache/ntfy && touch /var/cache/ntfy/cache.db
-#sudo mkdir /var/lib/ntfy && touch /var/lib/ntfy/user.db
-#sudo mkdir /etc/ntfy && sudo cp server.yml /etc/ntfy/server.yml
+sudo mkdir /var/cache/ntfy && touch /var/cache/ntfy/cache.db
+sudo mkdir /var/lib/ntfy && touch /var/lib/ntfy/user.db
+sudo mkdir /etc/ntfy && sudo cp server.yml /etc/ntfy/server.yml
 
-docker compose up -d
+run_sudo_command_or_not "docker compose up -d"
+
+container_id=$(run_sudo_command_or_not "docker ps -f name=ntfy" | grep -w ntfy | awk '{ print $1 }')
+
+run_sudo_command_or_not "docker exec $container_id ntfy user add --role=admin $username"
 
 uri="${defaultURL:8}"
-
-
-container_id=$(docker ps -f name=ntfy | grep -w ntfy | awk '{ print $1 }')
-
-docker exec $container_id 
-docker exec $container_id
 
 nginx_config_block="server {
 
   server_name $uri;
 
   location / {
-    proxy_pass         http://127.0.0.1:8092;
+    proxy_pass         http://127.0.0.1:$port;
 
     proxy_http_version 1.1;
 
@@ -100,7 +122,10 @@ nginx_config_block="server {
   }
 }"
 
-# echo "$nginx_config_block" > /etc/nginx/site-enabed/ntfy.conf
-# certbot --nginx -d $uri
+echo "$nginx_config_block" > /etc/nginx/site-enabed/ntfy.conf
+sudo certbot --nginx -d $uri
 
-
+echo "Finish !"
+echo "Don't forget to add the subdomain in your reverse DNS list."
+echo "Here is your access token :"
+echo "$(run_sudo_command_or_not "docker exec $container_idntfy ntfy token list $username"
